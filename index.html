@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>特別区 論文型 学習アプリ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:#f0f2f5;color:#333;min-height:100vh}
+header{background:#1a1a2e;color:#fff;padding:12px 20px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+header h1{font-size:1.0rem;letter-spacing:.04em;opacity:.9}
+.nav-tabs{display:flex;background:#16213e;border-bottom:2px solid #0f3460}
+.nav-tab{flex:1;padding:12px 6px;text-align:center;cursor:pointer;font-size:.85rem;color:#aaa;transition:all .2s;border:none;background:none}
+.nav-tab.active{color:#e94560;border-bottom:3px solid #e94560;font-weight:700}
+.nav-tab:hover:not(.active){color:#fff}
+.theme-bar{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;background:#fff;border-bottom:1px solid #e0e0e0;-webkit-overflow-scrolling:touch}
+.theme-bar::-webkit-scrollbar{height:3px}
+.theme-pill{padding:5px 12px;border-radius:20px;font-size:.75rem;border:2px solid currentColor;cursor:pointer;white-space:nowrap;transition:all .2s;background:#fff;font-weight:600}
+.theme-pill.active{color:#fff!important}
+.t0{color:#e74c3c}.t0.active{background:#e74c3c}
+.t1{color:#3498db}.t1.active{background:#3498db}
+.t2{color:#2ecc71}.t2.active{background:#2ecc71}
+.t3{color:#f39c12}.t3.active{background:#f39c12}
+.t4{color:#9b59b6}.t4.active{background:#9b59b6}
+.t5{color:#1abc9c}.t5.active{background:#1abc9c}
+.tall{color:#555}.tall.active{background:#555}
+main{max-width:720px;margin:0 auto;padding:16px}
+.mode-view{display:none}
+.mode-view.active{display:block}
+/* flashcard */
+.card-wrapper{perspective:1000px;margin:20px auto;max-width:540px;height:270px}
+.card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .5s;cursor:pointer}
+.card.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.12)}
+.card-front{background:#fff}
+.card-back{background:#fff;transform:rotateY(180deg)}
+.card-theme-badge{font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:12px;color:#fff;margin-bottom:12px}
+.card-q{font-size:1.0rem;line-height:1.6;font-weight:600}
+.card-a{font-size:1.05rem;line-height:1.6;color:#1a1a2e;font-weight:700}
+.card-hint{font-size:.72rem;color:#bbb;margin-top:10px}
+.card-controls{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.btn{padding:9px 22px;border-radius:10px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s}
+.btn-outline{background:#fff;border:2px solid #ddd;color:#555}.btn-outline:hover{border-color:#999}
+.btn-wrong{background:#fee2e2;color:#e74c3c;border:2px solid #f8b4b4}.btn-wrong:hover{background:#e74c3c;color:#fff}
+.btn-correct{background:#d1fae5;color:#059669;border:2px solid #a7f3d0}.btn-correct:hover{background:#059669;color:#fff}
+.btn-primary{background:#1a1a2e;color:#fff}.btn-primary:hover{background:#0f3460}
+.progress-bar-wrap{background:#e9ecef;border-radius:10px;height:8px;margin:10px 0;overflow:hidden}
+.progress-bar{height:100%;border-radius:10px;background:linear-gradient(90deg,#e94560,#f39c12);transition:width .3s}
+.progress-text{font-size:.8rem;color:#888;text-align:center;margin-bottom:4px}
+.stats-row{display:flex;gap:12px;justify-content:center;margin-top:8px}
+.stat-chip{padding:4px 14px;border-radius:20px;font-size:.78rem;font-weight:600}
+.stat-o{background:#d1fae5;color:#059669}
+.stat-x{background:#fee2e2;color:#e74c3c}
+.stat-left{background:#e0e7ff;color:#4338ca}
+/* fill */
+.template-area{background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.08);line-height:2.2;font-size:.92rem}
+.blank-input{border:none;border-bottom:2px solid #3498db;background:transparent;font-size:.92rem;font-family:inherit;color:#1a1a2e;text-align:center;min-width:50px;padding:0 4px;outline:none;transition:border-color .2s}
+.blank-input:focus{border-color:#e94560}
+.blank-input.correct{border-color:#059669;background:#d1fae5;border-radius:4px}
+.blank-input.wrong{border-color:#e74c3c;background:#fee2e2;border-radius:4px}
+.blank-input.revealed{background:#fef9c3;border-color:#f59e0b;border-radius:4px;color:#92400e;font-weight:700}
+.fill-controls{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap;align-items:center}
+.btn-check{background:#0f3460;color:#fff}.btn-check:hover{background:#1a1a2e}
+.btn-show{background:#f39c12;color:#fff}.btn-show:hover{background:#d68910}
+.btn-reset-fill{background:#e9ecef;color:#555}
+.score-badge{display:inline-block;padding:6px 18px;border-radius:20px;font-weight:700;font-size:.88rem}
+.score-good{background:#d1fae5;color:#059669}
+.score-mid{background:#fef9c3;color:#92400e}
+.score-low{background:#fee2e2;color:#e74c3c}
+/* essay */
+.essay-header{background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.essay-prompt strong{display:block;font-size:.95rem;color:#1a1a2e;margin-bottom:6px;font-weight:700}
+.essay-prompt span{font-size:.88rem;line-height:1.75;color:#333}
+.timer-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.timer-display{font-size:1.8rem;font-weight:700;font-variant-numeric:tabular-nums;color:#1a1a2e;letter-spacing:.05em}
+.timer-display.warning{color:#e74c3c;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.timer-btn{padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-size:.82rem;font-weight:600}
+.timer-start{background:#059669;color:#fff}.timer-start:hover{background:#047857}
+.timer-pause{background:#f59e0b;color:#fff}.timer-pause:hover{background:#d97706}
+.timer-reset{background:#e9ecef;color:#555}
+.essay-textarea{width:100%;height:360px;border:2px solid #e0e7ff;border-radius:12px;padding:16px;font-size:.92rem;line-height:1.9;font-family:inherit;resize:vertical;outline:none;background:#fff;transition:border-color .2s}
+.essay-textarea:focus{border-color:#4338ca}
+.char-counter{text-align:right;font-size:.8rem;margin-top:4px}
+.char-count{font-weight:700;font-size:.9rem}
+.char-ok{color:#059669}.char-near{color:#f59e0b}.char-over{color:#e74c3c}
+.checklist{background:#fff;border-radius:14px;padding:16px 20px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-top:14px}
+.checklist h3{font-size:.82rem;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid #f0f0f0}
+.checklist-item:last-child{border:none}
+.checklist-item input[type=checkbox]{width:17px;height:17px;margin-top:2px;cursor:pointer;accent-color:#e94560;flex-shrink:0}
+.checklist-item label{font-size:.84rem;line-height:1.5;cursor:pointer}
+.section-title{font-size:.88rem;font-weight:700;color:#888;margin:16px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.keyphrase-box{background:#f8f9ff;border-left:4px solid #4338ca;padding:10px 14px;border-radius:0 8px 8px 0;margin-top:12px;font-size:.82rem;line-height:1.7;color:#444}
+.keyphrase-box strong{display:block;font-size:.78rem;color:#4338ca;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+@media(max-width:480px){.card-q{font-size:.9rem}.timer-display{font-size:1.4rem}.essay-textarea{height:280px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>📝 特別区Ⅰ類 論文型 学習アプリ ── 江戸川区版 2026</h1>
+</header>
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchMode('qa')">💡 一問一答</button>
+  <button class="nav-tab" onclick="switchMode('fill')">📝 穴埋め</button>
+  <button class="nav-tab" onclick="switchMode('essay')">⏱ 論述練習</button>
+</div>
+
+<!-- ========== 一問一答 ========== -->
+<div id="view-qa" class="mode-view active">
+  <div class="theme-bar">
+    <button class="theme-pill tall active" onclick="filterQA(-1,this)">すべて</button>
+    <button class="theme-pill t0" onclick="filterQA(0,this)">🔴 防災</button>
+    <button class="theme-pill t1" onclick="filterQA(1,this)">🔵 DX</button>
+    <button class="theme-pill t2" onclick="filterQA(2,this)">🟢 子ども</button>
+    <button class="theme-pill t3" onclick="filterQA(3,this)">🟠 高齢</button>
+    <button class="theme-pill t4" onclick="filterQA(4,this)">🟣 地域</button>
+    <button class="theme-pill t5" onclick="filterQA(5,this)">🩵 多文化</button>
+  </div>
+  <main>
+    <div class="progress-text" id="qa-progress-text">0 / 0</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="qa-progress-bar" style="width:0%"></div></div>
+    <div class="stats-row">
+      <span class="stat-chip stat-o" id="stat-o">○ 0</span>
+      <span class="stat-chip stat-x" id="stat-x">× 0</span>
+      <span class="stat-chip stat-left" id="stat-left">残 0</span>
+    </div>
+    <div class="card-wrapper">
+      <div class="card" id="qa-card" onclick="flipCard()">
+        <div class="card-face card-front">
+          <span class="card-theme-badge" id="qa-badge">-</span>
+          <div class="card-q" id="qa-question">テーマを選んでスタート</div>
+          <div class="card-hint">タップで答えを確認</div>
+        </div>
+        <div class="card-face card-back">
+          <span class="card-theme-badge" id="qa-badge2">-</span>
+          <div class="card-a" id="qa-answer">-</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-controls">
+      <button class="btn btn-wrong" onclick="markCard(false)">× わからない</button>
+      <button class="btn btn-correct" onclick="markCard(true)">○ わかった</button>
+    </div>
+    <div class="card-controls">
+      <button class="btn btn-outline" onclick="prevCard()">◀ 前へ</button>
+      <button class="btn btn-outline" onclick="shuffleCards()">🔀 シャッフル</button>
+      <button class="btn btn-outline" onclick="nextCard()">次へ ▶</button>
+    </div>
+    <div class="card-controls">
+      <button class="btn btn-outline" onclick="resetProgress()">進捗リセット</button>
+      <button class="btn btn-primary" onclick="filterWrong()">× のみ表示</button>
+    </div>
+  </main>
+</div>
+
+<!-- ========== 穴埋め ========== -->
+<div id="view-fill" class="mode-view">
+  <div class="theme-bar">
+    <button class="theme-pill t0 active" onclick="showFill(0,this)">🔴 防災</button>
+    <button class="theme-pill t1" onclick="showFill(1,this)">🔵 DX</button>
+    <button class="theme-pill t2" onclick="showFill(2,this)">🟢 子ども</button>
+    <button class="theme-pill t3" onclick="showFill(3,this)">🟠 高齢</button>
+    <button class="theme-pill t4" onclick="showFill(4,this)">🟣 地域</button>
+    <button class="theme-pill t5" onclick="showFill(5,this)">🩵 多文化</button>
+  </div>
+  <main>
+    <div class="section-title" id="fill-theme-title">防災・災害対策</div>
+    <div class="fill-controls">
+      <button class="btn btn-check" onclick="checkFill()">✅ 採点</button>
+      <button class="btn btn-show" onclick="showAllAnswers()">👁 答えを見る</button>
+      <button class="btn btn-reset-fill" onclick="resetFill()">🔄 リセット</button>
+      <span id="fill-score"></span>
+    </div>
+    <div class="template-area" id="fill-content"></div>
+  </main>
+</div>
+
+<!-- ========== 論述練習 ========== -->
+<div id="view-essay" class="mode-view">
+  <div class="theme-bar">
+    <button class="theme-pill t0 active" onclick="showEssay(0,this)">🔴 防災</button>
+    <button class="theme-pill t1" onclick="showEssay(1,this)">🔵 DX</button>
+    <button class="theme-pill t2" onclick="showEssay(2,this)">🟢 子ども</button>
+    <button class="theme-pill t3" onclick="showEssay(3,this)">🟠 高齢</button>
+    <button class="theme-pill t4" onclick="showEssay(4,this)">🟣 地域</button>
+    <button class="theme-pill t5" onclick="showEssay(5,this)">🩵 多文化</button>
+  </div>
+  <main>
+    <div class="essay-header">
+      <div class="essay-prompt">
+        <strong id="essay-prompt-title">論述テーマ</strong>
+        <span id="essay-prompt-body"></span>
+      </div>
+      <div id="essay-keyphrase" class="keyphrase-box" style="margin-top:10px"></div>
+      <div class="timer-row">
+        <div class="timer-display" id="timer-display">80:00</div>
+        <button class="timer-btn timer-start" id="timer-btn" onclick="toggleTimer()">▶ スタート</button>
+        <button class="timer-btn timer-reset" onclick="resetTimer()">↺ リセット</button>
+      </div>
+    </div>
+    <div>
+      <textarea class="essay-textarea" id="essay-textarea" placeholder="ここに論文を書いてください（1500字以内・80分）&#10;&#10;【構成の型】&#10;第1段落：現状認識（全国→特別区→江戸川区の固有事情）&#10;第2段落：課題分析（2点程度）&#10;第3段落：具体策①&#10;第4段落：具体策②&#10;第5段落：結論（上位理念と職員としての決意）" oninput="updateCharCount()"></textarea>
+    </div>
+    <div class="char-counter"><span class="char-count" id="char-count">0</span> / 1500字</div>
+    <div class="checklist">
+      <h3>📋 採点チェックリスト</h3>
+      <div id="essay-checklist"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// =====================================================
+// DATA（江戸川区施策素材集 完全版）
+// =====================================================
+const themes = [
+
+// ─────────────────────────────────────────────────────
+// 0: 防災・災害対策
+// ─────────────────────────────────────────────────────
+{
+  name:'防災・災害対策',color:'#e74c3c',
+  prompt:'大規模水害・地震が想定される特別区において、区民の安全を確保するため、特別区の現状と課題を踏まえ、区職員として取り組む施策を具体的に論じなさい。',
+  keyphrases:'「ここにいてはダメです」「犠牲者ゼロの実現」「ハード対策とソフト対策の両輪」「行政依存から住民主体の防災へ」「自助・共助・公助の連携」「要配慮者を包摂する防災体制」「2100年共生社会ビジョン」',
+  template:
+`江戸川区は明治以降の地下水くみ上げにより最大【4.5】mの地盤沈下が発生し、陸域の約【7割】がゼロメートル地帯となっている。大規模水害時には最大浸水深【10m以上】（マンション3〜4階相当）・浸水継続時間【2週間以上】が想定される。江東5区（江戸川・墨田・江東・足立・葛飾）の浸水想定区域内人口は約【249万人】に上る。一方、首都直下地震（M7.3）では死者約【6,100】人・帰宅困難者約【453】万人が想定され、一時滞在施設の約【22】万人分が不足している状況だ。
+
+主な課題として、①公的な【広域避難場所】の確保不足、②【正常性バイアス】による避難行動の遅れ、③地震と洪水・高潮が重なる【複合災害】への対応、④令和3年法改正で努力義務化された要配慮者の【個別避難計画】の策定促進が挙げられる。
+
+江戸川区は東京大学・片田敏孝特任教授の監修のもと「【ここにいてはダメです】」を表紙に掲げた水害ハザードマップを改訂（2025年第2版・英語・中国語・やさしい日本語版も配布）し、全世帯に配布した。江東5区大規模水害広域避難計画では【72時間】前・48時間前・24時間前・9時間前のタイムライン手順を定め「【犠牲者ゼロ】」を目標とした。民間宿泊施設への自主避難に1人最大【9,000】円を補助する広域避難補助金も整備している。ハード面では全体計画【28.6】kmのスーパー堤防整備が64%完成し、住宅耐震化率は【97】%と23区1位を誇る。さらに要配慮者支援として令和5年12月に「避難行動要支援者名簿の提供に関する条例」を制定し、平常時からの名簿情報共有を可能にした。`,
+  checklist:[
+    '地盤沈下4.5m・ゼロメートル地帯7割・浸水深10m以上などの数値を示した',
+    '江東5区249万人・首都直下地震6,100人などの広域課題を示した',
+    '正常性バイアス・複合災害・個別避難計画など複数の課題を挙げた',
+    '「ここにいてはダメです」ハザードマップ（片田教授監修）に触れた',
+    'タイムライン避難（72時間前等）・広域避難計画に触れた',
+    '自主的広域避難補助金（9,000円）など具体的施策を示した',
+    'スーパー堤防（28.6km・64%）または耐震化率97%・23区1位に触れた',
+    '要配慮者の個別避難計画・名簿条例に触れた',
+    '区職員として担う役割を具体的に述べた',
+    '「2100年共生社会ビジョン」等の上位理念と結びつけた',
+    '1500字以内に収めた',
+  ],
+  qa:[
+    {q:'江戸川区の明治以降の最大地盤沈下量は？',a:'最大4.5m（地下水くみ上げによる）'},
+    {q:'江戸川区の陸域でゼロメートル地帯が占める割合は？',a:'約7割'},
+    {q:'江東5区（江戸川・墨田・江東・足立・葛飾）の浸水想定区域内人口は？',a:'約249万人'},
+    {q:'大規模水害時の最大浸水深と継続時間は？',a:'10m以上（マンション3〜4階相当）・最長2週間以上'},
+    {q:'首都直下地震（M7.3）の想定死者数・帰宅困難者数は？',a:'死者約6,100人・帰宅困難者約453万人'},
+    {q:'首都直下地震での一時滞在施設の不足数は？',a:'約22万人分'},
+    {q:'水害ハザードマップを監修した東大教授は？',a:'片田敏孝特任教授'},
+    {q:'江戸川区水害ハザードマップの表紙のコピーは？',a:'「ここにいてはダメです」'},
+    {q:'水害ハザードマップ第2版が公表された年は？',a:'2025年（令和7年）'},
+    {q:'江東5区大規模水害広域避難計画のタイムライン（最初の行動開始）は何時間前か？',a:'72時間前（以降48時間前→24時間前→9時間前）'},
+    {q:'自主的広域避難補助金の1人あたりの上限額は？',a:'最大9,000円'},
+    {q:'スーパー堤防の全体計画距離と完成率（令和3年度末）は？',a:'28.6km・約64%（約18.3km完成）'},
+    {q:'篠崎公園地区スーパー堤防の投資額と完成予定年度は？',a:'区と国で計約234億円・2026年度完成予定'},
+    {q:'江戸川区の住宅耐震化率と23区内順位は？',a:'97%・23区1位'},
+    {q:'江戸川区の密集市街地整備地区数の23区内順位は？',a:'23区最多'},
+    {q:'防災アプリの多言語対応言語は？',a:'英語・中国語・韓国語'},
+    {q:'令和3年法改正で努力義務化された要配慮者支援の取り組みは？',a:'個別避難計画の作成'},
+  ]
+},
+
+// ─────────────────────────────────────────────────────
+// 1: DX・行政デジタル化
+// ─────────────────────────────────────────────────────
+{
+  name:'DX・行政デジタル化',color:'#3498db',
+  prompt:'区民の利便性向上と行政効率化を両立するDX推進について、特別区が抱える課題を踏まえ、区職員として取り組む施策を具体的に論じなさい。',
+  keyphrases:'「来庁不要の区役所」「究極のバリアフリー」「誰一人取り残さないデジタル社会」「デジタル技術は目的でなく手段」「対面サービスの質を維持しデジタル弱者への配慮を両立」「GovTech東京との連携によるスケールメリット」「2030年SDGsビジョン」',
+  template:
+`特別区の【82.6】%がDX推進に必要な知識・スキルを持つ職員が不足していると回答し、江戸川区でも電子申請利用率は【40.8】%（2022年時点）にとどまる。内閣府調査では70歳以上の【57】%がスマートフォンを未使用で、高齢者・外国人・障害者を中心に【デジタルデバイド】（情報格差）が顕著だ。総務省「自治体DX推進計画」第4.0版では情報システムの標準化・共通化・AI活用推進等【6】項目が重点取組事項とされ、2040年問題（75歳以上人口2,200万人超）に向けてDXは「必須の改革」と位置づけられている。
+
+課題として①デジタルデバイドの解消、②デジタル【人材】の確保・育成、③自治体システム標準化・ガバメントクラウド移行（20業務対象）が挙げられる。
+
+江戸川区は【令和13年（2031年）】の新庁舎移転を見据え「【来庁不要の区役所】」の実現を目標に、【100以上】の手続きをオンライン化した。2024年6月には【メタバース区役所】（全国初）を先行運用開始し、仮想空間でアバターを使い職員と相談・申請が可能な「【究極のバリアフリー】」サービスを実現（Digi田甲子園2023本選に出場、DNP提供）。区HPには生成AI（【ChatGPT】連携）によるAI検索を実装し、約1万6,000ページの情報に24時間アクセス可能とした。デジタルデバイド対策として65歳以上に【スマートフォン購入助成金】（上限【3万円】）を支給し、なごみの家でもボランティアによるスマホ相談を定期開催している。中小企業向けにはDX導入助成（上限【200万円】・助成率2/3）を展開し、2023年7月設立の【GovTech東京】との連携でデジタル人材育成も推進している。`,
+  checklist:[
+    'DX人材不足82.6%・電子申請利用率40.8%などの数値を示した',
+    '高齢者スマホ未使用57%・デジタルデバイドを課題として挙げた',
+    '2031年新庁舎移転・「来庁不要の区役所」という目標に触れた',
+    '全国初のメタバース区役所（2024年6月）に触れた',
+    '「究極のバリアフリー」・Digi田甲子園出場に触れた',
+    'AI検索（ChatGPT連携）など生成AI活用を示した',
+    '高齢者スマホ助成（3万円）・なごみの家スマホ相談などデバイド解消策を示した',
+    'GovTech東京との連携を示した',
+    '区職員として担う役割を具体的に述べた',
+    '1500字以内に収めた',
+  ],
+  qa:[
+    {q:'特別区のDX人材不足の回答率は？',a:'82.6%'},
+    {q:'江戸川区の電子申請利用率（2022年）は？',a:'40.8%'},
+    {q:'70歳以上のスマートフォン未使用率（内閣府調査）は？',a:'57%'},
+    {q:'江戸川区の新庁舎移転の予定年（和暦・西暦）は？',a:'令和13年（2031年）'},
+    {q:'江戸川区が掲げるDXの目標スローガンは？',a:'「来庁不要の区役所」'},
+    {q:'全国初のメタバース区役所の先行運用開始年月は？',a:'2024年（令和6年）6月26日'},
+    {q:'メタバース区役所のシステム提供企業は？',a:'DNP（大日本印刷）'},
+    {q:'メタバース区役所が出場したコンテストは？',a:'Digi田甲子園2023（本選）'},
+    {q:'メタバース区役所が目指すコンセプトは？',a:'「究極のバリアフリー」'},
+    {q:'江戸川区のオンライン化手続き数は？',a:'100以上'},
+    {q:'江戸川区HPのAI検索に連携しているAIは？',a:'ChatGPT（Cogmo Enterprise 生成AI）'},
+    {q:'65歳以上向けスマートフォン購入助成金の上限額は？',a:'3万円（防災アプリインストールが条件）'},
+    {q:'GovTech東京の設立年月は？',a:'2023年7月'},
+    {q:'江戸川区の中小企業DX導入助成の上限額と助成率は？',a:'上限200万円・助成率2/3'},
+    {q:'総務省「自治体DX推進計画」の重点取組事項の数は？',a:'6項目'},
+    {q:'渋谷区がLINE申請で実現したオンライン申請率の変化は？',a:'32.7%→52.3%に向上'},
+    {q:'大田区のDX窓口改革を表すスローガンは？',a:'「書かない・待たない・回らない窓口」'},
+  ]
+},
+
+// ─────────────────────────────────────────────────────
+// 2: 子ども・子育て支援
+// ─────────────────────────────────────────────────────
+{
+  name:'子ども・子育て支援',color:'#2ecc71',
+  prompt:'少子化・子どもの貧困・いじめが深刻化する中、子どもたちが安心して育つ環境を整備するため、特別区が抱える課題を踏まえ、区職員として取り組む施策を具体的に論じなさい。',
+  keyphrases:'「こどもまんなか社会」「子どもの最善の利益」「切れ目のない伴走型支援」「貧困の連鎖を断つ」「アウトリーチ型支援」「予防・早期発見・早期対応」「子どもの意見表明権」「ヤングケアラーの早期発見」「未来を支える江戸川こどもプラン」',
+  template:
+`全国の不登校児童生徒数は【35万3,970】人（令和6年度・12年連続過去最多）、いじめ認知件数は約【76万9千】件（令和6年度）で重大事態は【1,405】件に上る。子どもの貧困率は約【11.5】%（約9人に1人）、中学生の【5.7】%にヤングケアラーの可能性がある。東京都の合計特殊出生率は【0.99】と全国最低水準で、核家族化による孤立した子育て（ワンオペ育児）の拡大が深刻だ。
+
+江戸川区では2010年1月の区内小1男児虐待死亡事件を機に「機関のはざまに落とさない」体制整備を急ぎ、「えどがわ【50】の子育てプラン」（従来25事業→50事業に拡充）のもと包括的支援を展開している。
+
+経済的支援として2023年9月に23区初の【給食費完全無償化】を実施し、病児・病後児保育も23区初の【無償化】（区内6施設）、乳児養育手当【月額13,000円】（所得制限なし・昭和44年から）、出産から段階的な合計【16】万円分のギフト支給、1歳時の【ファーストバースデーサポート】（第1子6万・第2子7万・第3子以降8万円）を実施。全国初の【長期育休支援制度】で2歳以降も育休継続を可能にし、令和4・5年度は連続で【待機児童ゼロ】を達成した（区立33園＋私立105園＝計【138】園）。区立小学校全【66】校で実施する【すくすくスクール】（年間293日・約23,000人登録）は学童保育と放課後教室を一体運営する独自モデルだ。区立児童相談所「【はあとポート】」（令和2年4月・全国初）では一時保護所の【全室個室化】と常勤弁護士配置を実現し、AIシステムで1日200〜300件の相談を効率的に処理している。ヤングケアラー対策として中学1年生【全員面談】（32校区）でスクリーニングを行い、ヤングケアラーズカフェ「若葉」でも居場所を提供している。`,
+  checklist:[
+    '不登校35万人・いじめ76万9千件などの最新数値を示した',
+    '出生率0.99・子ども貧困率11.5%・ヤングケアラー5.7%を挙げた',
+    'えどがわ50の子育てプラン・切れ目ない伴走型支援の方針を示した',
+    '給食費無償化（23区初）・病児保育無償化（23区初）に触れた',
+    'ファーストバースデーサポート・16万円ギフトなど経済的支援を示した',
+    '全国初の長期育休支援・待機児童ゼロを示した',
+    'すくすくスクール（66校・23,000人・年293日）に触れた',
+    '「はあとポート」の全室個室化・常勤弁護士・AI活用に触れた',
+    'ヤングケアラー対策（全員面談・カフェ若葉）を示した',
+    '「こどもまんなか社会」等の上位理念と結びつけた',
+    '1500字以内に収めた',
+  ],
+  qa:[
+    {q:'全国の不登校児童生徒数（令和6年度）と特徴は？',a:'35万3,970人・12年連続過去最多'},
+    {q:'全国のいじめ認知件数（令和6年度）と重大事態件数は？',a:'約76万9千件・重大事態1,405件'},
+    {q:'中学生のヤングケアラーの可能性がある割合は？',a:'5.7%'},
+    {q:'東京都の合計特殊出生率は？',a:'0.99（全国最低水準）'},
+    {q:'江戸川区で区立児童相談所設置のきっかけとなった事件は？',a:'2010年（平成22年）1月の区内小1男児虐待死亡事件'},
+    {q:'えどがわ子育てプランが拡充した事業数は？',a:'従来25事業→50事業'},
+    {q:'すくすくスクールの実施校数・登録者数・年間開催日数は？',a:'全66校・約23,000人・年間293日'},
+    {q:'「はあとポート」の開設年月と特徴（2つ）は？',a:'令和2年（2020年）4月開設・一時保護所の全室個室化・常勤弁護士配置'},
+    {q:'「はあとポート」の1日の着信件数と相談員数は？',a:'1日200〜300件着信・8人の電話相談員'},
+    {q:'江戸川区が23区初で実施した給食費に関する施策は？',a:'給食費完全無償化（2023年9月）'},
+    {q:'23区初の病児・病後児保育無償化の施設数は？',a:'区内6施設'},
+    {q:'乳児養育手当の月額・対象・開始年は？',a:'月額13,000円・満1歳まで・所得制限なし・昭和44年から'},
+    {q:'ファーストバースデーサポートの金額（第1〜3子）は？',a:'第1子6万円・第2子7万円・第3子以降8万円'},
+    {q:'全国初の長期育休支援制度の内容は？',a:'2歳以降も育休継続を支援・認定事業所の従業員に給料50%相当を支給'},
+    {q:'区立保育園・認定保育所の総数は？',a:'138園（区立33園＋私立105園）'},
+    {q:'ヤングケアラー対策の全員面談の対象と規模は？',a:'中学1年生全員・32校区で実施'},
+    {q:'2024年時点で特別区（23区）内で児童相談所を設置済みの区数は？',a:'10区（世田谷・江戸川・荒川・港・中野・品川・文京・豊島・板橋・葛飾）'},
+  ]
+},
+
+// ─────────────────────────────────────────────────────
+// 3: 高齢社会対策
+// ─────────────────────────────────────────────────────
+{
+  name:'高齢社会対策',color:'#f39c12',
+  prompt:'急速な高齢化が進む特別区において、高齢者が住み慣れた地域で安心して暮らし続けられる社会を実現するため、特別区が抱える課題を踏まえ、区職員として取り組む施策を具体的に論じなさい。',
+  keyphrases:'「地域包括ケアシステムの深化・推進」「地域共生社会の実現」「住み慣れた地域で自分らしい暮らしを人生の最後まで」「古い認知症観から新しい認知症観へ」「当事者参画」「支え手と受け手の固定化を超えた相互支援」「縦割り制度の縦糸に横糸を織り成す」',
+  template:
+`2025年問題として団塊世代が全員75歳以上となり、認知症高齢者は約【700万人】（高齢者の5人に1人）、介護人材は約【32万人】不足すると推計される。2040年には社会保障費が現在の約【1.6】倍に膨らむ「2040年問題」も迫る。江戸川区では2040年に高齢化率が【27.5】%に達すると予測され、75〜79歳が過去15年で約1.7倍・80歳以上が約【2.4】倍と急増している。介護事業者の【64.4】%が「募集しても応募がない」と回答するなど人材不足が深刻で、2024年1月施行の「【認知症基本法】」が求める当事者参画・新しい認知症観の普及も急務だ。
+
+江戸川区は国の地域包括ケアを全世代対応型に発展させた「【なごみの家】」（区内9か所・最終目標15か所）を設置し、コミュニティソーシャルワーカー・保健師が常駐、誰でも食堂・土曜学習支援・地域支援会議（年4回・参加者約【40】名）を運営する。「縦割り制度の縦糸に横糸を織り成す」役割を担う江戸川区独自のこの拠点は厚生労働省の事例集にも掲載されている。地域包括支援センター「熟年相談室」は計【27】か所（本所18＋分室9）に整備し、緊急通報システム「【マモルくん】」や配食サービスによる安否確認と連携する。認知症対策では【えどがわオレンジ協力隊】（認定団体・事業者による地域見守り）、認知症検診（【50歳以上】の該当者に受診券送付）、えどがわ筋力アップトレーニング「【えどトレ】」などフレイル予防も充実している。老人クラブ「くすのきクラブ」は【201】クラブ・会員約【12,000】人と23区最多を誇り、こうした予防重視の施策により要介護認定率は【23区最低】を実現している。`,
+  checklist:[
+    '認知症700万人・介護人材32万人不足など2025年問題の数値を示した',
+    '2040年問題（社会保障費1.6倍・高齢化率27.5%）に触れた',
+    '認知症基本法（2024年1月施行）・新しい認知症観に触れた',
+    '「なごみの家」の全世代型・地域共生社会拠点の特徴を具体的に述べた',
+    '「縦割り制度の縦糸に横糸を織り成す」等の核心的フレーズを使った',
+    '熟年相談室27か所・マモルくん等の見守り体制を示した',
+    'えどがわオレンジ協力隊・認知症検診など認知症対策を示した',
+    'えどトレ・くすのきクラブ（201クラブ12,000人）等の予防施策を示した',
+    '要介護認定率23区最低という実績を示した',
+    '介護人材確保・育成の方策を述べた',
+    '1500字以内に収めた',
+  ],
+  qa:[
+    {q:'2025年問題での認知症高齢者の推計数は？',a:'約700万人（高齢者の5人に1人）'},
+    {q:'2025年問題での介護人材不足数は？',a:'約32万人'},
+    {q:'2040年問題での社会保障費の増加幅は？',a:'現在の約1.6倍'},
+    {q:'認知症基本法の施行年月日は？',a:'2024年（令和6年）1月1日'},
+    {q:'認知症施策推進基本計画（第1期）の閣議決定年月は？',a:'2024年12月'},
+    {q:'江戸川区の高齢化率の2040年予測は？',a:'27.5%'},
+    {q:'80歳以上の人口が過去15年で何倍になったか？',a:'約2.4倍'},
+    {q:'介護事業者の何%が「募集しても応募がない」と回答しているか？',a:'64.4%'},
+    {q:'「なごみの家」の現在の設置数と最終目標は？',a:'区内9か所・最終15か所（全日常生活圏域）'},
+    {q:'「なごみの家」の地域支援会議の頻度と参加者数は？',a:'年4回・約40名'},
+    {q:'熟年相談室（地域包括支援センター）の総設置数は？',a:'27か所（本所18か所＋分室9か所）'},
+    {q:'江戸川区の緊急通報システムの名称は？',a:'マモルくん'},
+    {q:'えどがわオレンジ協力隊とは何か？',a:'認知症サポーターを持つ団体・事業者を区が認定し地域見守りを担う制度'},
+    {q:'江戸川区の認知症検診の対象年齢は？',a:'50歳以上の該当者に受診券送付'},
+    {q:'江戸川区独自の筋力トレーニングの名称は？',a:'えどがわ筋力アップトレーニング（えどトレ）'},
+    {q:'くすのきクラブの規模（クラブ数・会員数）と23区内順位は？',a:'201クラブ・総会員数約12,000人・23区最多'},
+    {q:'江戸川区の要介護認定率の23区内順位は？',a:'23区最低'},
+  ]
+},
+
+// ─────────────────────────────────────────────────────
+// 4: 地域コミュニティ・住民協働
+// ─────────────────────────────────────────────────────
+{
+  name:'地域コミュニティ・住民協働',color:'#9b59b6',
+  prompt:'地域コミュニティの衰退が深刻化する中、住民協働による地域力の向上を図るため、特別区が抱える課題を踏まえ、区職員として取り組む施策を具体的に論じなさい。',
+  keyphrases:'「地域共生社会」「自助・互助・共助・公助の4層構造」「地域の課題を我が事として主体的に取り組む」「受け手と支え手に分かれず互いに支えあう」「シビックプライド」「重層的支援体制整備事業」「ボランティア立区」「ともプロ！」',
+  template:
+`全国の自治会加入率は平成22年の78.0%から令和2年に71.7%（▲6.3pt）と低下し、23区全体の推定加入率は約【53.75】%（特別区長会調査研究機構）にとどまる。最大の課題は担い手の高齢化で、会長の【82.1】%が70歳以上・50代以下はわずか【0.9】%に過ぎない。転入世帯の加入率50%未満と回答した団体が【46.2】%を占め、タワーマンション増加によるオートロック問題・コロナ後の活動断絶・地域課題の複雑化（8050問題・ゴミ屋敷等）も深刻だ。
+
+江戸川区内には【273〜275】の町会・自治会があり、令和3年に「【ともに生きるまちを目指す条例】」を制定し区・区民・事業者の協働責務を明文化した。建築確認条例第【36】条では住宅建築事業者が入居者の町会加入に協力することを義務づけ、マンションでの加入促進を制度的に担保している。令和5年4月には【電子回覧板】を導入し、町会未加入者も閲覧可能にしながら紙との併用でデジタルデバイドにも配慮した。
+
+地域共生社会の拠点「【なごみの家】」では月【20】回程度のサロンプログラムと年4回の【地域支援会議】（約40名参加）を通じて「顔の見える関係」を構築している。2004年設立の「【江戸川総合人生大学】」（4学科・2年制・卒業生【1,176】名以上）は「ボランティア立区」の担い手を育成し、同窓会員約420名が地域で活躍している。2024年の地方自治法改正で創設された「【指定地域共同活動団体制度】」も活用し、行政と地域の協働をさらに深化させていく。`,
+  checklist:[
+    '23区加入率53.75%・会長82.1%が70歳以上などの数値を示した',
+    '転入世帯加入率46.2%・高齢化・タワマンなど複数の課題を挙げた',
+    '「ともに生きるまちを目指す条例」（令和3年）に触れた',
+    '建築確認条例第36条のマンション加入促進義務に触れた',
+    '電子回覧板（R5年4月・紙併用）に触れた',
+    '「なごみの家」の月20回サロン・地域支援会議に触れた',
+    '江戸川総合人生大学（2004年設立・卒業生1,176名）に触れた',
+    '「ボランティア立区」・「ともプロ！」など江戸川区独自の取り組みを示した',
+    '2024年地方自治法改正・指定地域共同活動団体制度に触れた',
+    '区職員として担う役割を具体的に述べた',
+    '1500字以内に収めた',
+  ],
+  qa:[
+    {q:'23区全体の推定町会・自治会加入率（特別区長会調査研究機構）は？',a:'約53.75%'},
+    {q:'全国の自治会加入率の変化（平成22年→令和2年）は？',a:'78.0%→71.7%（▲6.3pt）'},
+    {q:'町会・自治会会長の何%が70歳以上か？',a:'82.1%'},
+    {q:'50代以下の会長の割合は？',a:'わずか0.9%'},
+    {q:'転入世帯の加入率50%未満と回答した団体の割合は？',a:'46.2%'},
+    {q:'江戸川区の町会・自治会の数は？',a:'273〜275'},
+    {q:'「ともに生きるまちを目指す条例」の施行年は？',a:'令和3年（2021年）7月'},
+    {q:'建築確認条例第36条の内容は？',a:'住宅建築事業者が入居者の町会・自治会加入に協力することを義務づけ'},
+    {q:'電子回覧板の導入年月と更新頻度は？',a:'令和5年（2023年）4月・毎月1日・15日更新'},
+    {q:'なごみの家の月あたりのサロンプログラム開催回数は？',a:'月20回程度'},
+    {q:'地域支援会議の開催頻度と参加者数は？',a:'年4回・約40名'},
+    {q:'江戸川総合人生大学の設立年・学科数・授業料は？',a:'2004年設立・4学科・2年制・年間3万円'},
+    {q:'江戸川総合人生大学の卒業生数と同窓会員数は？',a:'卒業生1,176名以上・同窓会員約420名'},
+    {q:'「ボランティア立区」とは何か？',a:'江戸川総合人生大学卒業生等がボランティア団体を設立し担い手となる江戸川区の目標'},
+    {q:'2024年の地方自治法改正で創設された地域支援制度は？',a:'指定地域共同活動団体制度'},
+    {q:'世田谷区のまちづくり拠点は区内何か所か？',a:'28か所（まちづくりセンター、あんしんすこやかセンター、社協地区事務局が同施設）'},
+  ]
+},
+
+// ─────────────────────────────────────────────────────
+// 5: 多文化共生・ダイバーシティ
+// ─────────────────────────────────────────────────────
+{
+  name:'多文化共生・ダイバーシティ',color:'#1abc9c',
+  prompt:'外国人住民が増加する特別区において、誰もが安心して暮らせる多文化共生社会を実現するため、特別区が抱える課題を踏まえ、区職員として取り組む施策を具体的に論じなさい。',
+  keyphrases:'「外国人住民を支援の対象ではなく対等なパートナーとして位置づける」「コミュニケーション支援と生活支援の両輪」「多様性が地域の活力を生む」「育てる覚悟と選ばれる地域」「ハード・ソフト・ハートのバリアフリー」「インクルーシブシティ」「ともに生きるまちを目指す条例」',
+  template:
+`全国の在留外国人は約【359万人】（2024年6月末・過去最多）に達し、技能実習制度から「【育成就労制度】」（2027年4月施行・「国際貢献」から「人材確保・人材育成」へ目的転換）への移行が進む。ジェンダーギャップ指数は2025年版で日本は148か国中【118】位（G7最下位）と課題が大きい。
+
+江戸川区の外国人住民数は令和6年時点で【43,389】人（23区第2位・総人口の約【6.3】%）で、【120】を超える国・地域出身者が居住する。国籍別ではインドが【7,044】人と23区最多を誇り、西葛西は「【リトルインディア】」として知られる。2024年7月にはインド政府から【マハトマ・ガンジー胸像】が寄贈された。2100年には外国人人口が総人口の【16.5】%（約7.5万人）に増加する予測だ。外国人住民の最大の困りごとは「【言葉の壁】」（25.0%）だ。
+
+江戸川区は「ともに生きるまちを目指す条例」と「【多文化共生のまち推進条例】」の2本立ての条例体制を構築した。2024年10月に開設した【多文化共生センター】（タワーホール船堀3階）では、タブレットオンライン通訳を含め【14言語】での相談に対応し、「えどがわ日本語クラス」も設置している。令和6年6月策定の「【多言語による情報提供ガイドライン】」で防災・危機管理情報を英語・「【やさしい日本語】」で提供する基準を定めた。LGBTQ+対応として平成31年4月から「【同性パートナー関係申出書受領証】」を交付し、都内初の「手話言語条例」や都内唯一の障害者スポーツ専管組織（2016年）など、多様性を包括的に推進している。`,
+  checklist:[
+    '在留外国人359万人・育成就労制度（2027年）・ジェンダーギャップ118位の現状を示した',
+    '外国人43,389人（23区2位）・120国・インド7,044人（23区最多）・リトルインディアに触れた',
+    '2100年16.5%予測・言葉の壁25%など課題を具体的に示した',
+    '多文化共生のまち推進条例・ともに生きるまちを目指す条例に触れた',
+    '多文化共生センター（2024年10月・14言語対応）を示した',
+    '多言語情報提供ガイドライン・やさしい日本語に触れた',
+    '同性パートナー関係申出書（H31年4月）・手話言語条例（都内初）に触れた',
+    '「外国人住民を対等なパートナーとして」等の核心フレーズを使った',
+    '育成就労制度への対応・地域参画の促進を述べた',
+    '区職員として担う役割を具体的に述べた',
+    '1500字以内に収めた',
+  ],
+  qa:[
+    {q:'全国の在留外国人数（2024年6月末）は？',a:'約359万人（過去最多）'},
+    {q:'技能実習制度から移行する新制度名と施行年は？',a:'育成就労制度・2027年4月施行'},
+    {q:'育成就労制度への移行で何が変わるか？',a:'「国際貢献」から「人材確保・人材育成」へ目的が転換される'},
+    {q:'ジェンダーギャップ指数2025年版での日本の順位は？',a:'148か国中118位（G7最下位）'},
+    {q:'江戸川区の外国人住民数（令和6年）と23区内順位は？',a:'43,389人・23区第2位'},
+    {q:'江戸川区に居住する外国人の出身国・地域数は？',a:'120を超える'},
+    {q:'江戸川区のインド人住民数と23区内順位は？',a:'7,044人・23区最多'},
+    {q:'「リトルインディア」と呼ばれる江戸川区内のエリアは？',a:'西葛西（Y2K問題対応のインドIT技術者が来日した経緯でコミュニティが形成）'},
+    {q:'2024年7月にインド政府から寄贈されたものは？',a:'マハトマ・ガンジー胸像'},
+    {q:'江戸川区の外国人住民の2100年予測（割合と人数）は？',a:'総人口の16.5%・約7.5万人（6人に1人が外国人）'},
+    {q:'外国人住民が生活で最も困ること（第1位）は？',a:'言葉の壁（25.0%）'},
+    {q:'多文化共生センターの開設年月・場所・対応言語数は？',a:'2024年10月26日・タワーホール船堀3階・14言語'},
+    {q:'多文化共生センター開設前のアンケートで最多だったニーズ（1位）は？',a:'外国人向け相談窓口・情報発信（51.6%）'},
+    {q:'多言語による情報提供ガイドラインで防災情報を提供する言語基準は？',a:'原則として英語・やさしい日本語'},
+    {q:'江戸川区の同性パートナー関係申出書受領証の交付開始年月は？',a:'平成31年（2019年）4月1日'},
+    {q:'渋谷区が日本初の同性パートナーシップ条例を施行した年は？',a:'2015年'},
+    {q:'全国のパートナーシップ制度導入自治体数（2024年6月時点）と人口カバー率は？',a:'459自治体・人口カバー率85.1%'},
+  ]
+},
+
+]; // themes end
+
+// =====================================================
+// STATE
+// =====================================================
+let currentMode='qa',qaFilter=-1,qaPool=[],qaIndex=0,qaResults={},isFlipped=false;
+let fillTheme=0,essayTheme=0,timerInterval=null,timerRunning=false,timerSeconds=80*60;
+
+// =====================================================
+// MODE SWITCH
+// =====================================================
+function switchMode(mode){
+  currentMode=mode;
+  document.querySelectorAll('.mode-view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('view-'+mode).classList.add('active');
+  document.querySelectorAll('.nav-tab')[{qa:0,fill:1,essay:2}[mode]].classList.add('active');
+  if(mode==='fill') renderFill();
+  if(mode==='essay') renderEssay();
+  if(mode==='qa') renderCard();
+}
+
+// =====================================================
+// 一問一答
+// =====================================================
+function buildPool(f){
+  let p=[];
+  themes.forEach((t,ti)=>t.qa.forEach((q,qi)=>p.push({...q,themeIdx:ti,id:`${ti}-${qi}`})));
+  return f>=0?p.filter(c=>c.themeIdx===f):p;
+}
+function filterQA(idx,el){
+  document.querySelectorAll('#view-qa .theme-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  qaFilter=idx; qaPool=buildPool(idx); qaIndex=0; isFlipped=false; renderCard();
+}
+function renderCard(){
+  if(!qaPool.length){document.getElementById('qa-question').textContent='カードがありません';updateProgress();return;}
+  const c=qaPool[qaIndex],t=themes[c.themeIdx];
+  document.getElementById('qa-question').textContent=c.q;
+  document.getElementById('qa-answer').textContent=c.a;
+  ['qa-badge','qa-badge2'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.textContent=t.name; el.style.background=t.color;
+  });
+  document.getElementById('qa-card').classList.remove('flipped');
+  isFlipped=false; updateProgress();
+}
+function flipCard(){isFlipped=!isFlipped;document.getElementById('qa-card').classList.toggle('flipped',isFlipped);}
+function nextCard(){if(qaPool.length){qaIndex=(qaIndex+1)%qaPool.length;renderCard();}}
+function prevCard(){if(qaPool.length){qaIndex=(qaIndex-1+qaPool.length)%qaPool.length;renderCard();}}
+function markCard(ok){if(!qaPool.length)return;qaResults[qaPool[qaIndex].id]=ok;nextCard();}
+function shuffleCards(){
+  for(let i=qaPool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qaPool[i],qaPool[j]]=[qaPool[j],qaPool[i]];}
+  qaIndex=0; renderCard();
+}
+function filterWrong(){
+  const w=buildPool(qaFilter).filter(c=>qaResults[c.id]===false||qaResults[c.id]===undefined);
+  if(!w.length){alert('すべて正解済みです！🎉');return;}
+  qaPool=w; qaIndex=0; renderCard();
+}
+function resetProgress(){qaResults={};qaPool=buildPool(qaFilter);qaIndex=0;renderCard();}
+function updateProgress(){
+  const total=qaPool.length;
+  const inPool=k=>qaPool.some(c=>c.id===k);
+  const correct=Object.keys(qaResults).filter(k=>inPool(k)&&qaResults[k]===true).length;
+  const wrong=Object.keys(qaResults).filter(k=>inPool(k)&&qaResults[k]===false).length;
+  document.getElementById('qa-progress-text').textContent=`${qaIndex+1} / ${total}`;
+  document.getElementById('qa-progress-bar').style.width=total?((qaIndex/(total-1||1))*100)+'%':'0%';
+  document.getElementById('stat-o').textContent=`○ ${correct}`;
+  document.getElementById('stat-x').textContent=`× ${wrong}`;
+  document.getElementById('stat-left').textContent=`残 ${total-correct-wrong}`;
+}
+
+// =====================================================
+// 穴埋め
+// =====================================================
+function showFill(idx,el){
+  document.querySelectorAll('#view-fill .theme-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active'); fillTheme=idx;
+  document.getElementById('fill-score').textContent=''; renderFill();
+}
+function renderFill(){
+  const t=themes[fillTheme];
+  document.getElementById('fill-theme-title').textContent=t.name;
+  document.getElementById('fill-score').textContent='';
+  let i=0;
+  const html=t.template.replace(/【([^】]+)】/g,(m,a)=>{
+    const idx=i++; const len=Math.max(4,a.length);
+    return `<input class="blank-input" data-idx="${idx}" data-ans="${encodeURIComponent(a)}" size="${len}" maxlength="${a.length+10}" autocomplete="off" spellcheck="false">`;
+  });
+  document.getElementById('fill-content').innerHTML=html.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+function norm(s){return s.replace(/[　 ]/g,'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).toLowerCase();}
+function checkFill(){
+  const inputs=document.querySelectorAll('#fill-content .blank-input');
+  let ok=0;
+  inputs.forEach(inp=>{
+    const a=decodeURIComponent(inp.dataset.ans);
+    inp.classList.remove('correct','wrong','revealed');
+    if(norm(inp.value.trim())===norm(a)){inp.classList.add('correct');ok++;}
+    else inp.classList.add('wrong');
+  });
+  const total=inputs.length,pct=Math.round((ok/total)*100);
+  const cls=pct>=80?'score-good':pct>=50?'score-mid':'score-low';
+  document.getElementById('fill-score').innerHTML=`<span class="score-badge ${cls}">${ok}/${total} (${pct}%)</span>`;
+}
+function showAllAnswers(){
+  document.querySelectorAll('#fill-content .blank-input').forEach(inp=>{
+    inp.value=decodeURIComponent(inp.dataset.ans);
+    inp.classList.remove('correct','wrong'); inp.classList.add('revealed');
+  });
+  document.getElementById('fill-score').innerHTML='<span class="score-badge score-mid">答えを表示中</span>';
+}
+function resetFill(){renderFill();}
+
+// =====================================================
+// 論述練習
+// =====================================================
+function showEssay(idx,el){
+  document.querySelectorAll('#view-essay .theme-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active'); essayTheme=idx; resetTimer(); renderEssay();
+}
+function renderEssay(){
+  const t=themes[essayTheme];
+  document.getElementById('essay-prompt-title').textContent='【論述テーマ】'+t.name;
+  document.getElementById('essay-prompt-body').textContent=t.prompt;
+  document.getElementById('essay-keyphrase').innerHTML=`<strong>論文で使えるキーフレーズ</strong>${t.keyphrases}`;
+  const cl=document.getElementById('essay-checklist');
+  cl.innerHTML=t.checklist.map((item,i)=>`<div class="checklist-item"><input type="checkbox" id="chk-${i}"><label for="chk-${i}">${item}</label></div>`).join('');
+  updateCharCount();
+}
+function updateCharCount(){
+  const len=document.getElementById('essay-textarea').value.length;
+  const el=document.getElementById('char-count');
+  el.textContent=len;
+  el.className='char-count '+(len>1500?'char-over':len>1300?'char-near':'char-ok');
+}
+function toggleTimer(){timerRunning?pauseTimer():startTimer();}
+function startTimer(){
+  timerRunning=true;
+  document.getElementById('timer-btn').textContent='⏸ 一時停止';
+  document.getElementById('timer-btn').className='timer-btn timer-pause';
+  timerInterval=setInterval(()=>{
+    if(timerSeconds<=0){clearInterval(timerInterval);timerRunning=false;document.getElementById('timer-display').textContent='00:00';return;}
+    timerSeconds--; updateTimerDisplay();
+  },1000);
+}
+function pauseTimer(){
+  clearInterval(timerInterval); timerRunning=false;
+  document.getElementById('timer-btn').textContent='▶ 再開';
+  document.getElementById('timer-btn').className='timer-btn timer-start';
+}
+function resetTimer(){
+  clearInterval(timerInterval); timerRunning=false; timerSeconds=80*60; updateTimerDisplay();
+  document.getElementById('timer-btn').textContent='▶ スタート';
+  document.getElementById('timer-btn').className='timer-btn timer-start';
+}
+function updateTimerDisplay(){
+  const m=Math.floor(timerSeconds/60),s=timerSeconds%60;
+  const el=document.getElementById('timer-display');
+  el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.className='timer-display'+(timerSeconds<300?' warning':'');
+}
+
+// =====================================================
+// INIT
+// =====================================================
+qaPool=buildPool(-1); renderCard(); renderFill(); renderEssay();
+</script>
+</body>
+</html>
